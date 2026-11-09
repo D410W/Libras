@@ -84,6 +84,5 @@ def normalize_hand(points: list[(int, int)]) -> list[(int, int)]:
 def classify_signal(points: list[(int, int)]):
   norm = normalize_hand(points)
   
-  print(norm)
-  print("\n")
+  print(norm, '\n')
   
