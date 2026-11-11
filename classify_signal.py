@@ -1,4 +1,10 @@
 import cv2
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+import ast
 
 WRIST = 0
 THUMB_CMC, THUMB_MCP, THUMB_IP, THUMB_TIP = 1, 2, 3, 4
@@ -41,6 +47,7 @@ def detect_hands(frame: numpy.ndarray, palm_detector, hand_pose) -> list[list[(i
   
   return palms_pts
 
+
 def draw_hand(frame: numpy.ndarray, pts: list[(int, int)]):
   for finger_idx, chain in enumerate(FINGER_LANDMARK_GROUPS):
     color = FINGER_COLORS[finger_idx]
@@ -58,6 +65,13 @@ def draw_hand(frame: numpy.ndarray, pts: list[(int, int)]):
   for tip_id, color in zip(FINGER_TIPS, FINGER_COLORS):
     cv2.circle(frame, pts[tip_id], 9, color, 2, cv2.LINE_AA)
     
+def flatten(input: list[tuple[int, int]]):
+  x = []
+  for tup in input:
+    for el in tup:
+      x.append(el)
+  
+  return x
 
 def normalize_hand(points: list[(int, int)]) -> list[(int, int)]:
   INF = 999999
@@ -81,8 +95,30 @@ def normalize_hand(points: list[(int, int)]) -> list[(int, int)]:
   
   return norm_points
 
-def classify_signal(points: list[(int, int)]):
+
+def load_knn(classes_path: string) -> KNeighborsClassifier:
+  with open(classes_path) as file:
+    contents = file.read()
+  
+  lines = contents.split('\n')[:-1];
+    
+  x, y = [], []
+  for line in lines:
+    vec, _, label = line.rpartition(' ')
+    x.append(flatten(ast.literal_eval(vec)))
+    y.append(int(label))
+  
+  knn = KNeighborsClassifier(n_neighbors=1)
+  knn.fit(x, y)
+  
+  return knn
+  
+
+def classify_signal(classifier: KNeighborsClassifier, points: list[(int, int)]):
   norm = normalize_hand(points)
+  norm = np.array(flatten(norm))
   
-  print(norm, '\n')
+  pred = classifier.predict(norm.reshape(1, -1))
   
+  print(pred)
+  return pred[0]

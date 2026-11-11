@@ -17,7 +17,7 @@ POSE_MODEL = os.path.join(MODELS, "handpose_estimation_mediapipe_2023feb.onnx")
 BACKEND = cv2.dnn.DNN_BACKEND_OPENCV
 TARGET = cv2.dnn.DNN_TARGET_CPU
 
-from classify_signal import draw_hand, classify_signal, detect_hands
+from classify_signal import *
 
 def main():
   for p in (PALM_MODEL, POSE_MODEL):
@@ -36,6 +36,8 @@ def main():
     raise RuntimeError("Cannot open camera")
 
   prev_tick = cv2.getTickCount()
+  
+  classifier = load_knn('classes.txt')
 
   while True:
     ok, frame = cap.read()
@@ -46,7 +48,7 @@ def main():
     
     for pts in detect_hands(frame, palm_detector, hand_pose):
       draw_hand(frame, pts)
-      classify_signal(pts)
+      classify_signal(classifier, pts)
     
     curr_tick = cv2.getTickCount()
     fps = cv2.getTickFrequency() / (curr_tick - prev_tick)
