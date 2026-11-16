@@ -3,7 +3,6 @@ import sys
 import time
 
 import cv2
-import numpy as np
 
 MODELS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 sys.path.insert(0, MODELS)
@@ -39,6 +38,9 @@ def main():
   
   classifier = load_knn('classes.txt')
 
+  hands_to_write = []
+  is_writing = False
+
   while True:
     ok, frame = cap.read()
     if not ok:
@@ -46,9 +48,11 @@ def main():
 
     frame = cv2.flip(frame, 1)
     
-    for pts in detect_hands(frame, palm_detector, hand_pose):
-      draw_hand(frame, pts)
-      classify_signal(classifier, pts)
+    for hand in detect_hands(frame, palm_detector, hand_pose):
+      draw_hand(frame, hand)
+      classify_signal(classifier, hand)
+      if is_writing:
+        hands_to_write.append(str(normalize_hand(hand)) + '\n')
     
     curr_tick = cv2.getTickCount()
     fps = cv2.getTickFrequency() / (curr_tick - prev_tick)
@@ -63,6 +67,16 @@ def main():
       filename = f"frame_{int(time.time() * 1000)}.png"
       cv2.imwrite(filename, frame)
       print(f"Saved {filename}")
+    if key == ord('w'):
+      is_writing = not is_writing
+      if not is_writing:
+        with open('output_hands.txt', 'w') as f:
+          f.writelines(hands_to_write)
+        print(f'Written {len(hands_to_write)} lines to \'output_hands.txt\'')
+      else:
+        print('Logging hands...')
+        hands_to_write = []
+      
 
   cap.release()
   cv2.destroyAllWindows()
